@@ -706,6 +706,7 @@ id custom
 id customPanel
 id decor_content_parent
 id default_activity_button
+id detection
 id dimensions
 id direct
 id disableHome

@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private Button calcul;
     private Button init;
     private GraphView graph;
+    private TextView detect;
 
     MediaPlayer mediaPlayer;
     MediaRecorder mediaRecorder;
@@ -52,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
     AudioTrack audioOut = null;
     int sampleRate = 44100;
+    int frequency=430;
 
     int minSize = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
 
@@ -80,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         calcul=findViewById(R.id.calcul);
         graph=findViewById(R.id.graph);
         init=findViewById(R.id.initialise);
+        detect=findViewById(R.id.detection);
 
 
         record.setOnClickListener(new View.OnClickListener() {
@@ -169,15 +172,21 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     //timeSize should be a power of two.
-                    int timeSize= 2^(nearest_power_2(minSize));
+                    //int timeSize= 2^(nearest_power_2(minSize));
 
                     FFT a = new FFT(1024,sampleRate);
 
                     a.forward(Tofloat(music2Short));
                     //txt1.setText(Float.toString(a.real[500]));
-                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(generateData(a,800));
+                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(generateData(a,50));
 
                     graph.addSeries(series);
+                    if (calculSeuil(frequency ,a)){
+                        detect.setText("detected");
+                    }
+                    else {
+                        detect.setText("not detected");
+                    }
                 }
             }
         });
@@ -298,18 +307,25 @@ public class MainActivity extends AppCompatActivity {
         double y;
         float c;
         float b;
-        float z;
+        //float z;
 
         DataPoint[] values = new DataPoint[total];
         for (int j=0;j<total;j++){
             x=j;
             c=a.real[j]*a.real[j];
             b=a.imag[j]*a.imag[j];
-            z=Math.abs(b+c);
-            y=20*Math.log(z);
+            y=Math.abs(b+c);
+            //y=20*Math.log(z);
             DataPoint v = new DataPoint(x,y);
             values[j]=v;
         }
         return values;
+    }
+
+    public boolean calculSeuil(int frequency, FFT a){
+        float x= frequency/43;
+        int j = Math.round(x);
+        float seuil=Math.abs(a.real[j]*a.real[j]+a.imag[j]*a.imag[j])/1000000;
+        return seuil>=500000;
     }
 }
