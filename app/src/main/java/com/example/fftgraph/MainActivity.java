@@ -53,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
 
     AudioTrack audioOut = null;
     int sampleRate = 44100;
-    int frequency=430;
+    int frequency=1760;
+    int deltaF=sampleRate/1024;
 
     int minSize = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
 
@@ -178,14 +179,14 @@ public class MainActivity extends AppCompatActivity {
 
                     a.forward(Tofloat(music2Short));
                     //txt1.setText(Float.toString(a.real[500]));
-                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(generateData(a,50));
+                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(generateData(a,150));
 
                     graph.addSeries(series);
                     if (calculSeuil(frequency ,a)){
-                        detect.setText("detected");
+                        detect.setText("detected" +frequency +"Hz\n");
                     }
                     else {
-                        detect.setText("not detected");
+                        detect.setText("not detected"+frequency +"Hz\n");
                     }
                 }
             }
@@ -311,11 +312,10 @@ public class MainActivity extends AppCompatActivity {
 
         DataPoint[] values = new DataPoint[total];
         for (int j=0;j<total;j++){
-            x=j;
+            x=j*deltaF;
             c=a.real[j]*a.real[j];
             b=a.imag[j]*a.imag[j];
-            y=Math.abs(b+c);
-            //y=20*Math.log(z);
+            y=Math.abs(b+c)/1000000000;
             DataPoint v = new DataPoint(x,y);
             values[j]=v;
         }
