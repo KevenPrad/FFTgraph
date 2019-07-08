@@ -22,6 +22,7 @@ import android.widget.Toast;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
+import com.jjoe64.graphview.series.PointsGraphSeries;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,14 +48,19 @@ public class MainActivity extends AppCompatActivity {
 
     MediaPlayer mediaPlayer;
     MediaRecorder mediaRecorder;
-    String pathsave="";
 
     final int REQUEST_PERMISSION_CODE=1000;
 
     AudioTrack audioOut = null;
-    int sampleRate = 44100;
-    int frequency=1760;
-    int deltaF=sampleRate/1024;
+    int sampleRate = 88200;
+    int bufferSize=1024; //1024
+    int frequency=4948;
+    int deltaF=sampleRate/bufferSize;
+
+    File extStore = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+    String pathsave = extStore.getAbsolutePath()+"/"
+            + UUID.randomUUID()+toString()+"Audio_recorder.mp3";
+
 
     int minSize = AudioTrack.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
 
@@ -63,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
 
     InputStream is;
 
-    FileInputStream file1 = null;
+    //FileInputStream file1 = null;
 
 
     @Override
@@ -93,18 +99,23 @@ public class MainActivity extends AppCompatActivity {
                 stop.setEnabled(false);
                 stopRecord.setEnabled(true);
                 play.setEnabled(false);
-                pathsave = Environment.getExternalStorageDirectory().getAbsolutePath()+"/"
-                        + UUID.randomUUID()+toString()+"Audio_recorder.Jgp";
-                setUpMediaRecorder();
-                try{
-                    mediaRecorder.prepare();
-                    mediaRecorder.start();
-                }
-                catch(IOException e){
-                    e.printStackTrace();
-                }
+                record.setEnabled(false);
 
-                Toast.makeText(MainActivity.this, "Recording", Toast.LENGTH_SHORT).show();
+                if (isExternalStorageWritable()) {
+
+                    setUpMediaRecorder();
+
+                    try {
+                        mediaRecorder.prepare();
+                        mediaRecorder.start();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    Toast.makeText(MainActivity.this, "Recording", Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(MainActivity.this, "Disque externe non disponible,ou non diponible en écriture", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 
@@ -115,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
                 stopRecord.setEnabled(false);
                 record.setEnabled(false);
                 calcul.setEnabled(false);
+                play.setEnabled(false);
 
                 mediaPlayer = new MediaPlayer();
 
@@ -141,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
                 record.setEnabled(true);
                 stopRecord.setEnabled(false);
                 play.setEnabled(true);
+                stop.setEnabled(false);
             }
         });
 
@@ -152,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
                 record.setEnabled(true);
                 stop.setEnabled(false);
                 play.setEnabled(true);
+                stopRecord.setEnabled(false);
             }
         });
 
@@ -175,18 +189,22 @@ public class MainActivity extends AppCompatActivity {
                     //timeSize should be a power of two.
                     //int timeSize= 2^(nearest_power_2(minSize));
 
-                    FFT a = new FFT(1024,sampleRate);
+                    FFT a = new FFT(bufferSize,sampleRate);
+
+                    int [] values={645,860,1290};
 
                     a.forward(Tofloat(music2Short));
                     //txt1.setText(Float.toString(a.real[500]));
-                    LineGraphSeries<DataPoint> series = new LineGraphSeries<DataPoint>(generateData(a,150));
+                    PointsGraphSeries<DataPoint> series = new PointsGraphSeries<DataPoint>(generateSelectedDataSpike(a,values));
+                    //PointsGraphSeries<DataPoint> series = new PointsGraphSeries<DataPoint>(generateData(a,200));
+
 
                     graph.addSeries(series);
-                    if (calculSeuil(frequency ,a)){
-                        detect.setText("detected" +frequency +"Hz\n");
+                    if (calculSeuil(frequency ,a) && calculSeuil(860,a)){
+                        detect.setText("detected" +frequency +"Hz"+a.real[Math.round(frequency/43)]+"\n");
                     }
                     else {
-                        detect.setText("not detected"+frequency +"Hz\n");
+                        detect.setText("not detected"+frequency +"Hz"+a.real[Math.round(frequency/43)]+"\n");
                     }
                 }
             }
@@ -199,15 +217,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
     }
 
     private void setUpMediaRecorder(){
         mediaRecorder = new MediaRecorder();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        mediaRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
         mediaRecorder.setOutputFile(pathsave);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+        //mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        //mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        //mediaRecorder.setAudioEncoder(MediaRecorder.OutputFormat.AMR_NB);
+        //mediaRecorder.setOutputFile(pathsave);
         //mediaRecorder.setOutputFile();
     }
 
@@ -242,6 +263,16 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            Toast.makeText(this, "memoire externe disponible en écriture", Toast.LENGTH_SHORT).show();
+            return true;
+
+        }
+        return false;
+    }
+
     public void initialize(){
 
         File initialFile = new File(pathsave);
@@ -251,8 +282,6 @@ public class MainActivity extends AppCompatActivity {
         catch (IOException e){
             e.printStackTrace();
         }
-
-
 
 
         audioOut = new AudioTrack(
@@ -322,10 +351,32 @@ public class MainActivity extends AppCompatActivity {
         return values;
     }
 
+    private DataPoint[] generateSelectedDataSpike(FFT a, int[] values) {
+        double y;
+        int x;
+        float c;
+
+        int len=values.length;
+        DataPoint[] point = new DataPoint[len];
+        for (int j=0;j<len;j++){
+
+            x=values[j];
+            //frequency conversion to point
+            float b= x/43;
+            int d = Math.round(b);
+            c=a.real[d]*a.real[d];
+            b=a.imag[d]*a.imag[d];
+            y=Math.abs(b+c)/1000000000;
+            DataPoint v = new DataPoint(x,y);
+            point[j]=v;
+        }
+        return point;
+    }
+
     public boolean calculSeuil(int frequency, FFT a){
         float x= frequency/43;
         int j = Math.round(x);
-        float seuil=Math.abs(a.real[j]*a.real[j]+a.imag[j]*a.imag[j])/1000000;
-        return seuil>=500000;
+        float seuil=Math.abs(a.real[j]*a.real[j]+a.imag[j]*a.imag[j])/1000000000;
+        return seuil>=1000;
     }
 }
