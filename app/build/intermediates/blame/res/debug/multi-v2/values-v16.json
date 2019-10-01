@@ -4,7 +4,17 @@
             "outputFile": "/home/asus/AndroidStudioProjects/FFTgraph/app/build/intermediates/incremental/mergeDebugResources/merged.dir/values-v16/values-v16.xml",
             "map": [
                 {
-                    "source": "/home/asus/.gradle/caches/transforms-2/files-2.1/fdd55b3338f982b89f067d69a4f3b2c3/res/values-v16/values-v16.xml",
+                    "source": "/home/asus/.gradle/caches/transforms-2/files-2.1/69735df246664f4b4044d3bb09a513f5/res/values-v16/values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "65",
+                        "endOffsets": "116"
+                    }
+                },
+                {
+                    "source": "/home/asus/.gradle/caches/transforms-2/files-2.1/d2e2d42f66f73fe7d59e97882c615498/res/values-v16/values-v16.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -20,16 +30,6 @@
                         "endLines": "6",
                         "endColumns": "12",
                         "endOffsets": "289"
-                    }
-                },
-                {
-                    "source": "/home/asus/.gradle/caches/transforms-2/files-2.1/35e4fd337d3d2564d0e97c3fba872fb0/res/values-v16/values-v16.xml",
-                    "from": {
-                        "startLines": "2",
-                        "startColumns": "4",
-                        "startOffsets": "55",
-                        "endColumns": "65",
-                        "endOffsets": "116"
                     }
                 }
             ]
